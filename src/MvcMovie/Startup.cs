@@ -40,13 +40,12 @@ namespace MvcMovie
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            // ユーザーシークレットから取得
+            // 接続文字列を取得
+            // ::開発環境ではuser-secretsから取得
+            // ::本番環境(Azure App Service）では構成から取得
             _connectionString = Configuration["ConnectionStrings:MvcMovieContextAzure"];
 
-            services.AddDbContext<MvcMovieContext>(options =>
-                    options.UseSqlServer(_connectionString));
-
-
+            services.AddDbContext<MvcMovieContext>(options => options.UseSqlServer(_connectionString));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -71,7 +70,7 @@ namespace MvcMovie
             {
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    template: "{controller=Movies}/{action=Index}/{id?}");
             });
 
         }
