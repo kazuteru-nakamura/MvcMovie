@@ -2,9 +2,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MvcMovie.Models
+namespace MvcMovie.ViewModels
 {
-    public class Movie
+    public class MovieViewModel
     {
         public int Id { get; set; }
 
@@ -16,7 +16,7 @@ namespace MvcMovie.Models
         [DataType(DataType.Date)]
         public DateTime ReleaseDate { get; set; }
 
-        [Range(1, 100)]
+        [Range(1, 10000)]
         [DataType(DataType.Currency)]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Price { get; set; }

@@ -10,15 +10,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using MvcMovie.Models;
+using MvcMovie.Core.Interfaces;
+using MvcMovie.Infrastructure;
 
 namespace MvcMovie
 {
     public class Startup
     {
-        /// <summary>
-        /// User-Secrets
-        /// </summary>
+        
         private string _connectionString = null;
 
         public Startup(IConfiguration configuration)
@@ -46,6 +45,8 @@ namespace MvcMovie
             _connectionString = Configuration["ConnectionStrings:MvcMovieContextAzure"];
 
             services.AddDbContext<MvcMovieContext>(options => options.UseSqlServer(_connectionString));
+
+            services.AddScoped<IMovieRepository, EfMovieRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

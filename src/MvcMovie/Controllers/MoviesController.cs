@@ -1,48 +1,44 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using MvcMovie.Core.Interfaces;
+using MvcMovie.Core.Model;
+using MvcMovie.Infrastructure;
+using MvcMovie.ViewModels;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using MvcMovie.Models;
 
 namespace MvcMovie.Controllers
 {
     public class MoviesController : Controller
     {
-        private readonly MvcMovieContext _context;
 
-        public MoviesController(MvcMovieContext context)
+        private readonly IMovieRepository _movieRepository;
+
+        public MoviesController(MvcMovieContext context, IMovieRepository movieRepository)
         {
-            _context = context;
+            _movieRepository = movieRepository;
         }
 
         // GET: Movies
         public async Task<IActionResult> Index(string movieGenre, string searchString)
         {
-            // Use LINQ to get list of genres.
-            IQueryable<string> genreQuery = from m in _context.Movie
-                                            orderby m.Genre
-                                            select m.Genre;
+            var genreQuery = _movieRepository.GenreList();
 
-            var movies = from m in _context.Movie
-                         select m;
+            var movies = _movieRepository.ListAsync(movieGenre, searchString);
 
-            if (!string.IsNullOrEmpty(searchString))
+            var movieVM =  new List<MovieViewModel>();
+
+            foreach (var item in await movies)
             {
-                movies = movies.Where(s => s.Title.Contains(searchString));
-            }
-
-            if (!string.IsNullOrEmpty(movieGenre))
-            {
-                movies = movies.Where(x => x.Genre == movieGenre);
+                movieVM.Add(this.CreateMovieViewModel(item));
             }
 
             var movieGenreVM = new MovieGenreViewModel
             {
                 Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
-                Movies = await movies.ToListAsync()
+                Movies = movieVM
             };
 
             return View(movieGenreVM);
@@ -56,14 +52,14 @@ namespace MvcMovie.Controllers
                 return NotFound();
             }
 
-            var movie = await _context.Movie
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var movie = await _movieRepository.FindAsync((int)id);
+
             if (movie == null)
             {
                 return NotFound();
             }
 
-            return View(movie);
+            return View(this.CreateMovieViewModel(movie));
         }
 
         // GET: Movies/Create
@@ -81,11 +77,10 @@ namespace MvcMovie.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(movie);
-                await _context.SaveChangesAsync();
+                await _movieRepository.Add(movie);
                 return RedirectToAction(nameof(Index));
             }
-            return View(movie);
+            return View(this.CreateMovieViewModel(movie));
         }
 
         // GET: Movies/Edit/5
@@ -96,12 +91,13 @@ namespace MvcMovie.Controllers
                 return NotFound();
             }
 
-            var movie = await _context.Movie.FindAsync(id);
+            var movie = await _movieRepository.FindAsync((int)id);
+
             if (movie == null)
             {
                 return NotFound();
             }
-            return View(movie);
+            return View(this.CreateMovieViewModel(movie));
         }
 
         // POST: Movies/Edit/5
@@ -120,8 +116,7 @@ namespace MvcMovie.Controllers
             {
                 try
                 {
-                    _context.Update(movie);
-                    await _context.SaveChangesAsync();
+                    await _movieRepository.Update(movie);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -136,7 +131,7 @@ namespace MvcMovie.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(movie);
+            return View(this.CreateMovieViewModel(movie));
         }
 
         // GET: Movies/Delete/5
@@ -147,14 +142,16 @@ namespace MvcMovie.Controllers
                 return NotFound();
             }
 
-            var movie = await _context.Movie
-                .FirstOrDefaultAsync(m => m.Id == id);
+            //var movie = await _context.Movie
+            //    .FirstOrDefaultAsync(m => m.Id == id);
+            var movie = await _movieRepository.FindAsync((int)id);
+
             if (movie == null)
             {
                 return NotFound();
             }
 
-            return View(movie);
+            return View(this.CreateMovieViewModel(movie));
         }
 
         // POST: Movies/Delete/5
@@ -162,15 +159,29 @@ namespace MvcMovie.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var movie = await _context.Movie.FindAsync(id);
-            _context.Movie.Remove(movie);
-            await _context.SaveChangesAsync();
+            var movie = await _movieRepository.FindAsync((int)id);
+
+            await _movieRepository.Remove(movie);
+
             return RedirectToAction(nameof(Index));
         }
 
         private bool MovieExists(int id)
         {
-            return _context.Movie.Any(e => e.Id == id);
+            return _movieRepository.Exists(id);
+        }
+
+        private MovieViewModel CreateMovieViewModel(Movie model)
+        {
+            return new MovieViewModel()
+            {
+                Id = model.Id,
+                Title = model.Title,
+                ReleaseDate = model.ReleaseDate,
+                Genre = model.Genre,
+                Rating = model.Rating,
+                Price = model.Price
+            };
         }
     }
 }
