@@ -16,7 +16,7 @@ namespace MvcMovie.Controllers
 
         private readonly IMovieRepository _movieRepository;
 
-        public MoviesController(MvcMovieContext context, IMovieRepository movieRepository)
+        public MoviesController(IMovieRepository movieRepository)
         {
             _movieRepository = movieRepository;
         }
